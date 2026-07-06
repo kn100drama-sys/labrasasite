@@ -290,10 +290,10 @@ const PRODUTOS = [
   },  {
     id: 26,
     categoria: "Combos",
-    nome: "Combo La brasa TURBO",
-    desc: "Combo com Burger La Brasa TURBO ( pão francês, molho da casa, burger de fraldinha 200g,, queijo prato, bacon, cebola caramelizada, picles, alface e tomate) + batata + molho + refri.",
-    preco: 31.99,
-    imagem: "https://static.saipos.com/saipos-estatico/img-items/60944/store_item/2252cff9c3e53c30806134fc73a22970.png",
+    nome: "Combo Especial Copa",
+    desc: "Burger 100g, queijo prato, bacon, molho verde, alface e tomate, Pão em formato de bola + Batata + refri lata + um pacote de figurinha copa.",
+    preco: 27,45,
+    imagem: "https://res.cloudinary.com/dlllpozrk/image/upload/v1783311086/imagem_2026-07-06_011101598_zs58wk.png",
     adicionais: true,
     observacoes: true,
   },  {
@@ -435,7 +435,7 @@ const PRODUTOS = [
     observacoes: false,
   },
   {
-    id: 55,
+    id: 67,
     categoria: "Bebidas",
     nome: "Heineken Garrafa",
     desc: "Cerveja heineken, garrafa 600ml.",
