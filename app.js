@@ -1,6 +1,8 @@
 /* ======================================================================
-   APP.JS — Lógica do site (não é necessário editar este arquivo)
+   APP.JS — Lógica do site
    Os dados vêm de produtos.js e pagamento.js
+   (Único trecho alterado nesta versão: a função goToPayment(), que agora
+   chama o backend para gerar o Pix em vez de montar o código aqui.)
    ====================================================================== */
 
 const TAXA_ENTREGA = 6.00;
@@ -175,37 +177,55 @@ function openCheckout() {
   document.getElementById("checkoutOverlay").classList.add("open");
 }
 
-function goToPayment() {
+async function goToPayment() {
   const nome = document.getElementById("fNome").value.trim();
   const tel = document.getElementById("fTel").value.trim();
   const end = document.getElementById("fEnd").value.trim();
   if (!nome || !tel || !end) { showToast("Preencha nome, telefone e endereço"); return; }
 
-  closeModal("checkoutOverlay");
-
   const total = cart.reduce((s, i) => s + i.unit * i.qty, 0) + TAXA_ENTREGA;
-  document.getElementById("payValor").textContent = brl(total);
-
   const txid = "PED" + Date.now().toString().slice(-8);
-  const codigo = obterCodigoPix(total, txid);
-  document.getElementById("pixCode").textContent = codigo;
 
-  const qrWrap = document.getElementById("qrWrap");
-  if (PAGAMENTO_CONFIG.gerarQrCode) {
-    qrWrap.style.display = "";
-    document.getElementById("qrImg").src =
-      `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(codigo)}`;
-  } else {
-    qrWrap.style.display = "none";
+  const botao = document.querySelector('#checkoutOverlay .add-cart');
+  const textoOriginal = botao.textContent;
+  botao.textContent = "Gerando Pix...";
+  botao.disabled = true;
+
+  try {
+    const { modo, codigo } = await obterCodigoPix(total, txid, {
+      nome,
+      telefone: tel,
+      itens: cart,
+    });
+
+    closeModal("checkoutOverlay");
+
+    document.getElementById("payValor").textContent = brl(total);
+    document.getElementById("pixCode").textContent = codigo;
+
+    const qrWrap = document.getElementById("qrWrap");
+    if (PAGAMENTO_CONFIG.gerarQrCode) {
+      qrWrap.style.display = "";
+      document.getElementById("qrImg").src =
+        `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(codigo)}`;
+    } else {
+      qrWrap.style.display = "none";
+    }
+
+    const avisoManual = document.getElementById("avisoValorManual");
+    avisoManual.style.display = modo === "chave_fixa" ? "" : "none";
+
+    const lista = document.getElementById("payInstrucoes");
+    lista.innerHTML = PAGAMENTO_CONFIG.instrucoes.map(i => `<li>${i}</li>`).join("");
+
+    document.getElementById("paymentOverlay").classList.add("open");
+  } catch (erro) {
+    console.error(erro);
+    showToast(erro.message || "Erro ao gerar o Pix. Tente novamente.");
+  } finally {
+    botao.textContent = textoOriginal;
+    botao.disabled = false;
   }
-
-  const avisoManual = document.getElementById("avisoValorManual");
-  avisoManual.style.display = PAGAMENTO_CONFIG.modo === "chave_fixa" ? "" : "none";
-
-  const lista = document.getElementById("payInstrucoes");
-  lista.innerHTML = PAGAMENTO_CONFIG.instrucoes.map(i => `<li>${i}</li>`).join("");
-
-  document.getElementById("paymentOverlay").classList.add("open");
 }
 
 function copyPix() {

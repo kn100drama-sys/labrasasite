@@ -7,33 +7,10 @@
 
 const PAGAMENTO_CONFIG = {
 
-  /* ----------------------------------------------------------------
-     modo:
-       "copia_e_cola"  -> o site MONTA um código Pix completo (padrão
-                          Banco Central) já com o valor do pedido embutido.
-                          O cliente cola esse código no app do banco e o
-                          valor já vem preenchido automaticamente.
-                          Exige preencher "chave" e "recebedor" abaixo
-                          corretamente.
-
-       "chave_fixa"    -> o site apenas MOSTRA a sua chave Pix (a mesma
-                          de sempre) para o cliente copiar e pagar
-                          manualmente, digitando o valor no app do banco.
-                          Mais simples, não precisa validar nada, mas o
-                          cliente precisa digitar o valor com atenção.
-  ---------------------------------------------------------------- */
-  modo: "chave_fixa",
-
-  /* Chave Pix da loja (CPF, CNPJ, e-mail, telefone ou chave aleatória) */
-  chave: "contato@labrasaburger.com.br",
-
-  /* Usados apenas no modo "copia_e_cola" (precisam ser iguais ao
-     cadastro da conta que recebe o Pix, sem acento e sem caracteres
-     especiais, no máximo 25 e 15 caracteres respectivamente) */
-  recebedor: {
-    nome: "LA BRASA BURGER",
-    cidade: "SAO PAULO",
-  },
+  /* URL do seu backend (o mesmo que criamos com o endpoint /gerar-pix).
+     Troque pelo endereço real onde ele estiver hospedado.
+     Ex: "https://meu-backend.com/api/pagamento/gerar-pix" */
+  backendUrl: "https://backhend-labrasa.onrender.com/api/pagamento/gerar-pix",
 
   /* Mostrar QR Code na tela de pagamento além do código copia-e-cola */
   gerarQrCode: true,
@@ -50,76 +27,74 @@ const PAGAMENTO_CONFIG = {
 
 
 /* ======================================================================
-   A partir daqui é lógica de geração do código Pix (padrão EMV do Banco
-   Central). Normalmente não precisa mexer aqui — apenas nas
-   configurações acima.
+   A partir daqui é lógica de comunicação com o backend. Normalmente não
+   precisa mexer aqui — apenas nas configurações acima.
    ====================================================================== */
 
-/** Calcula o CRC16-CCITT exigido no final de todo código Pix. */
-function _pixCrc16(payload) {
-  let resultado = 0xFFFF;
-  const polinomio = 0x1021;
-  for (let i = 0; i < payload.length; i++) {
-    resultado ^= payload.charCodeAt(i) << 8;
-    for (let j = 0; j < 8; j++) {
-      resultado = (resultado & 0x8000)
-        ? ((resultado << 1) ^ polinomio) & 0xFFFF
-        : (resultado << 1) & 0xFFFF;
-    }
-  }
-  return resultado.toString(16).toUpperCase().padStart(4, "0");
-}
-
-/** Monta um campo EMV no formato ID + tamanho + valor. */
-function _emv(id, valor) {
-  const tamanho = String(valor.length).padStart(2, "0");
-  return `${id}${tamanho}${valor}`;
-}
-
-/** Remove acentos e caracteres fora do padrão aceito pelo Pix. */
-function _limparTexto(txt) {
-  return txt
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^A-Za-z0-9 ]/g, "")
-    .toUpperCase();
+/** Remove tudo que não for dígito de uma string. */
+function _somenteDigitos(txt) {
+  return (txt || "").replace(/\D/g, "");
 }
 
 /**
- * Gera o código Pix "copia e cola" completo, com o valor do pedido embutido.
- * Só é usado quando PAGAMENTO_CONFIG.modo === "copia_e_cola".
+ * Converte um telefone brasileiro digitado no formulário (ex: "(17)
+ * 99271-9357") para o padrão E.164 exigido pela Sunize (ex:
+ * "+5517992719357"). Se o cliente já digitar com DDI, respeita.
  */
-function gerarPayloadPixCopiaCola(valor, txid) {
-  const chave = PAGAMENTO_CONFIG.chave;
-  const nome = _limparTexto(PAGAMENTO_CONFIG.recebedor.nome).substring(0, 25);
-  const cidade = _limparTexto(PAGAMENTO_CONFIG.recebedor.cidade).substring(0, 15);
-  const idTx = (txid || "PEDIDO").substring(0, 25);
-
-  const gui = _emv("00", "br.gov.bcb.pix");
-  const chaveField = _emv("01", chave);
-  const merchantAccountInfo = _emv("26", gui + chaveField);
-
-  const semCrc =
-    _emv("00", "01") +
-    merchantAccountInfo +
-    _emv("52", "0000") +
-    _emv("53", "986") +
-    _emv("54", valor.toFixed(2)) +
-    _emv("58", "BR") +
-    _emv("59", nome || "LOJA") +
-    _emv("60", cidade || "CIDADE") +
-    _emv("62", _emv("05", idTx)) +
-    "6304";
-
-  return semCrc + _pixCrc16(semCrc);
+function formatarTelefoneE164(telefone) {
+  let digitos = _somenteDigitos(telefone);
+  if (digitos.startsWith("55") && digitos.length > 11) {
+    // já tem DDI 55
+  } else {
+    digitos = "55" + digitos;
+  }
+  return "+" + digitos;
 }
 
 /**
- * Retorna o código que deve aparecer na tela de pagamento (e ser usado
- * para gerar o QR Code), já respeitando o modo escolhido lá em cima.
+ * Pede ao backend para gerar o código Pix (via Sunize ou chave fixa,
+ * dependendo de como o backend estiver configurado) e retorna:
+ *   { modo, codigo, transactionId? }
+ *
+ * @param {number} valor  - valor total do pedido, ex: 49.90
+ * @param {string} txid   - identificador do pedido (usado como external_id)
+ * @param {Object} pedido - { nome, telefone, itens }
+ *   itens: array de itens do carrinho no formato usado pelo site
+ *          (precisa ter nome, unit, qty)
  */
-function obterCodigoPix(valor, txid) {
-  if (PAGAMENTO_CONFIG.modo === "chave_fixa") {
-    return PAGAMENTO_CONFIG.chave;
+async function obterCodigoPix(valor, txid, pedido) {
+  const items = (pedido.itens || []).map(i => ({
+    id: String(i.id ?? i.key ?? i.nome),
+    title: i.nome,
+    description: i.obs || i.nome,
+    price: i.unit,
+    quantity: i.qty,
+    is_physical: true,
+  }));
+
+  const resposta = await fetch(PAGAMENTO_CONFIG.backendUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      externalId: txid,
+      totalAmount: valor,
+      items,
+      customer: {
+        name: pedido.nome,
+        phone: formatarTelefoneE164(pedido.telefone),
+      },
+    }),
+  });
+
+  const dados = await resposta.json();
+
+  if (!resposta.ok) {
+    throw new Error(dados.erro || "Não foi possível gerar o Pix. Tente novamente.");
   }
-  return gerarPayloadPixCopiaCola(valor, txid);
+
+  return {
+    modo: dados.modo,
+    codigo: dados.codigoPix,
+    transactionId: dados.transactionId,
+  };
 }
