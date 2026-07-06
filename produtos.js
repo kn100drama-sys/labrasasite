@@ -1,69 +1,70 @@
 /* ======================================================================
-   PRODUTOS.J.S. — Catálogo do cardápio
+   PRODUTOS.JS — Catálogo do cardápio
    ----------------------------------------------------------------------
-   Edite este arquivo para adicionar, removedor ou alterar produtos.
+   Edite este arquivo para adicionar, remover ou alterar produtos.
    Não é necessário mexer em nenhum outro arquivo do site.
-   ======================================================================
+   ====================================================================== */
 
 /* ----------------------------------------------------------------------
    1) CATEGORIAS
-   Defina aqui a ordem em que as categorias apareceram no menu e nas abas
-   de filtrô. O texto precisa ser IGUAL ao campo "categoria" usado nos
-   produtos lá embaixem.
+   Defina aqui a ordem em que as categorias aparecem no menu e nas abas
+   de filtro. O texto precisa ser IGUAL ao campo "categoria" usado nos
+   produtos lá embaixo.
 ---------------------------------------------------------------------- */
-const CATEGORIAS = [[]
-  "Burgões"‚,
-  "Combos"‚,
-  "Porções"‚,
-  "bebidas" (bebidas)‚,
-  O "Sobremesas"‚,
-]¡;
+const CATEGORIAS = [
+  "Burgers",
+  "Combos",
+  "Porções",
+  "Bebidas",
+  "Sobremesas",
+];
 
 /* ----------------------------------------------------------------------
    2) ADICIONAIS
-   Lista global de anúncios que aparecem na tela de qual produto que
-   tenha "adicionais: verdade". Para um produto não mais adicionais
+   Lista global de adicionais que aparece na tela de qualquer produto que
+   tenha "adicionais: true". Para um produto não mostrar adicionais
    (ex.: bebidas), basta colocar "adicionais: false" nesse produto.
 ---------------------------------------------------------------------- */
-const ADICIONAIS = [[]
-  { nomo¡:: O "Bacon"‚, precão¡:: 2.00 O}‚,
-  { nomo¡:: O "Ovo"‚, precão¡:: 1.50 O}‚,
-  { nomo¡:: "Salada (alface e tomate)"‚, precão¡:: 1.50 O}‚,
-  { nomo¡:: "Picles" (Picles)‚, precão¡:: 1,00 O}‚,
-  { nomo¡:: "Cebola roxa"‚, precão¡:: 1,00 O}‚,
-  { nomo¡:: "Cebola caramelizada"‚, precão¡:: 2.00 O}‚,
-  { nomo¡:: O "Catupiry"‚, precão¡:: 2.50 O}‚,
-  { nomo¡:: "Cheddar cremoso"‚, precão¡:: 2.50 O}‚,
-  { nomo¡:: "Geleia de pimenta"‚, precão¡:: 1.50 O}‚,
-  { nomo¡:: O "Gorgonzola"‚, precão¡:: 2.50 O}‚,
-  { nomo¡:: O "Queijo prato"‚, precão¡:: 2.00 O}‚,
-  { nomo¡:: A "Muçarela"‚, precão¡:: 2.00 O}‚,
-  { nomo¡:: "Queijo gouda"‚, precão¡:: 2.50 O}‚,
-  { nomo¡:: "Hambúrguer de fraldinha"‚, precão¡:: 6.00 O}‚,
-  { nomo¡:: "Hambúrguer de costela"‚, precão¡:: 6.00 O}‚,
-  { nomo¡:: "Hambúrguer de picanha"‚, precão¡:: 8.00 O}‚,
-  { nomo¡:: "Hambúrguer de Frango"‚, precão¡:: 5.00 O}‚,
-  { nomo¡:: "Carne seca esfiada"‚, precão¡:: 4.00 O}‚,
-  { nomo¡:: "Costela esfiada"‚, precão¡:: 4.00 O}‚,
-  { nomo¡:: O "Presunto"‚, precão¡:: 1.50 O}‚,
-  { nomo¡:: "Trocar por burger 200g"‚, precão¡:: 3.00 O}
-]¡;
+const ADICIONAIS = [
+  { nome: "Bacon", preco: 2.00 },
+  { nome: "Ovo", preco: 1.50 },
+  { nome: "Salada (alface e tomate)", preco: 1.50 },
+  { nome: "Picles", preco: 1.00 },
+  { nome: "Cebola roxa", preco: 1.00 },
+  { nome: "Cebola caramelizada", preco: 2.00 },
+  { nome: "Catupiry", preco: 2.50 },
+  { nome: "Cheddar cremoso", preco: 2.50 },
+  { nome: "Geleia de pimenta", preco: 1.50 },
+  { nome: "Gorgonzola", preco: 2.50 },
+  { nome: "Queijo prato", preco: 2.00 },
+  { nome: "Muçarela", preco: 2.00 },
+  { nome: "Queijo gouda", preco: 2.50 },
+  { nome: "Burger de fraldinha", preco: 6.00 },
+  { nome: "Burger de costela", preco: 6.00 },
+  { nome: "Burger de picanha", preco: 8.00 },
+  { nome: "Burger de frango", preco: 5.00 },
+  { nome: "Carne seca desfiada", preco: 4.00 },
+  { nome: "Costela desfiada", preco: 4.00 },
+  { nome: "Presunto", preco: 1.50 },
+  { nome: "Trocar por burger 200g", preco: 3.00 }
+];
 
 /* ----------------------------------------------------------------------
    3) PRODUTOS
-   Cada projeto aceita os seguintes campos:
+   Cada produto aceita os seguintes campos:
 
-   id -> número único (não repetir)
-   categoria -> precisa batedor com um item da lista CATEGORIAS acima
-   nome -> nome exibido no card e no modal
-   desc -> frase curta exibida embaixada do nome (cartão e modal)
+   id           -> número único (não repetir)
+   categoria    -> precisa bater com um item da lista CATEGORIAS acima
+   nome         -> nome exibido no card e no modal
+   desc         -> frase curta exibida embaixo do nome (card e modal)
    ingredientes -> texto exibido no modal, dentro de "Ingredientes"
-   preco -> preço base, em número (use ponto, não vírgula)
-   imagem -> URL da foto do produto
-   adicionais -> true/false — mostra ou esconde o bloco de adicionais
-   observacoes -> true/false — mostra ou esconde o campo de observacoes
-   destaque -> true/false — opcional, mostra selo "Mais pedido" sem cartão
+   preco        -> preço base, em número (use ponto, não vírgula)
+   imagem       -> URL da foto do produto
+   adicionais   -> true/false — mostra ou esconde o bloco de adicionais
+   observacoes  -> true/false — mostra ou esconde o campo de observações
+   destaque     -> true/false — opcional, mostra selo "Mais pedido" no card
 ---------------------------------------------------------------------- */
+
 const PRODUTOS = [
 
   /* ---------------- BURGERS ---------------- */
