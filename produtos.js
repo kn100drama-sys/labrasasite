@@ -293,7 +293,7 @@ const PRODUTOS = [
     categoria: "Combos",
     nome: "Combo Especial Copa",
     desc: "Burger 100g, queijo prato, bacon, molho verde, alface e tomate, Pão em formato de bola + Batata + refri lata + um pacote de figurinha copa.",
-    preco: 27,45,
+    preco: 27.45,
     imagem: "https://res.cloudinary.com/dlllpozrk/image/upload/v1783311086/imagem_2026-07-06_011101598_zs58wk.png",
     adicionais: true,
     observacoes: true,
